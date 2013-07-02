@@ -36,4 +36,35 @@ int main() {
 }
 ```
 
+Sample of generated code:
 
+```c++
+struct DEVSTAT {
+  static const std::size_t address = 0x02620020;
+
+  static uint32_t get() {
+    return *(reinterpret_cast<volatile uint32_t *>(address));
+  }
+
+  static uint32_t set(uint32_t new_value) {
+    *(reinterpret_cast<volatile uint32_t *>(address)) = new_value;
+    return *(reinterpret_cast<volatile uint32_t *>(address));
+  }
+
+  uint32_t value;
+
+  DEVSTAT() : value(get()) {}
+
+  explicit DEVSTAT(uint32_t new_value) {
+    set(new_value);
+  }
+
+  operator std::size_t() const {
+    return value;
+  }
+
+  uint32_t BOOTMODE() {
+    return GetRegisterField(address, 1, 13);
+  }
+};
+```
