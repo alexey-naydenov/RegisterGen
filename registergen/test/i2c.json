@@ -1,0 +1,14 @@
+{ "sections":
+  [{ "name": "i2c",
+     "addr": "0x02530000",
+     "desc": "I2C configuration registers",
+     "registers": [
+	 { "name": "ICMDR",
+	   "desc": "I2C Mode Register",
+	   "off": "0x24" }
+     ]
+   }
+  ]
+}
+	
+    

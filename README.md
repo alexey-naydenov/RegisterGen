@@ -13,6 +13,15 @@ Features:
 - registers are singletons
 - the register object should not have a state
 
+## JSON schema ##
+
+- The top level can contain one or more occurrences of arrays:
+  `sections`, `registers`.
+- `sections` can contain `sections` and/or `registers`.
+- `registers` can contain `fields`.
+- `fields` can contain `values`.
+- `values` can contain `values` (used to define conditional values).
+
 ## Example usage ##
 
 Generated code can be used in the following way:
