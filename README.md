@@ -68,3 +68,27 @@ struct DEVSTAT {
   }
 };
 ```
+
+Sample configuration:
+
+```json
+{[
+  {
+    "section": "Register section",
+    "address": "0x100000",
+	"registers": [
+	  { "name": "DEVSTAT",
+	    "offset": "0x100",
+		"address": "0x80012300",
+		"fields": [
+		  { "name": "BOOTMODE", "first": 1, "last": 13,
+		    "values": [
+			  { "name": "I2C", "value": 1 }
+			]
+		  }
+	    ]
+	  }
+	]
+  }
+]}
+```
