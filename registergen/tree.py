@@ -31,6 +31,8 @@ def always_apply_condition(path, key):
     """Helper function that applies to all nodes."""
     return True
 
-def apply_to_leaves(function, condition=None):
+def apply_to_leaves(function, tree, condition=None):
     """Apply a function to values of nodes that satisfy some condition. """
-    pass
+    
+
+    return tree

@@ -15,6 +15,8 @@ Features:
 
 ## JSON schema ##
 
+Children synonyms: `sections`, `registers`, `fields`, `values`.
+
 - The top level can contain one or more occurrences of arrays:
   `sections`, `registers`.
 - `sections` can contain `sections` and/or `registers`.
