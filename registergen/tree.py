@@ -24,6 +24,9 @@ from collections import abc
 
 import registergen.utils as rgu
 
+PRE_FUNCTION_KEY = 'pre'
+POST_FUNCTION_KEY = 'post'
+
 _SECTIONS = 'sections'
 _REGISTERS = 'registers'
 _FIELDS = 'fields'
@@ -48,6 +51,9 @@ def numeric_filter(path):
 
 def convert_to_numbers(path, value):
     return rgu.string_to_int(value)
+
+def internal_node_filter(path):
+    return path[-1] in _CHILDREN_KEY_NAMES
 
 def transform_tree(function, tree, condition=None, path=None):
     """Apply a function to values of nodes that satisfy some condition.
@@ -78,7 +84,7 @@ def accumulate_paths(path, value, accumulator):
     accumulator.append(".".join(path))
     return value, accumulator        
 
-def reduce_tree(function, tree, accumulator=None):
+def reduce_tree(function, tree, condition=None, path=None, accumulator=None):
     """Walk the tree and accumulate some data from it.
 
     function takes path, value and current value of the accumulator,
@@ -88,5 +94,32 @@ def reduce_tree(function, tree, accumulator=None):
         nonlocal accumulator
         new_value, accumulator = function(path, value, accumulator)
         return new_value
-    tree = transform_tree(transform_function, tree)
+    tree = transform_tree(transform_function, tree, 
+                          condition=condition, path=path)
     return accumulator, tree
+
+def accumulate_nothing(value, accumulator):
+    return accumulator
+    
+def process_tree(key_functions_dict, tree, accumulator):
+    """Traverse tree and call pre and post functions for each node.
+
+    The tree is not getting rewritten.
+    """
+    for node_name, node_value in tree.items():
+        # pre function
+        if node_name in key_functions_dict \
+                and PRE_FUNCTION_KEY in key_functions_dict[node_name]:
+            accumulator = key_functions_dict[node_name][PRE_FUNCTION_KEY](
+                node_value, accumulator)
+        # apply to children
+        if node_name in _CHILDREN_KEY_NAMES:
+            for child in node_value:
+                accumulator = process_tree(key_functions_dict, child, 
+                                           accumulator)
+        # post function
+        if node_name in key_functions_dict \
+                and POST_FUNCTION_KEY in key_functions_dict[node_name]:
+            accumulator = key_functions_dict[node_name][POST_FUNCTION_KEY](
+                node_value, accumulator)
+    return accumulator

@@ -1,6 +1,7 @@
 from pprint import pprint
 
 import registergen.tree as rgt
+import registergen.generate_cpp as rgc
 
 TEST_REGISTER_TREE = {'sections': [{'addr': '0x02530000',
                                     'desc': 'I2C configuration registers',
@@ -14,9 +15,14 @@ def test_transform_tree_identity():
                               TEST_REGISTER_TREE) == TEST_REGISTER_TREE
 
 # def test_accumulate_paths():
-#     print(rgt.reduce_tree(rgt.accumulate_paths, TEST_REGISTER_TREE)[0])
+#     pprint(rgt.reduce_tree(rgt.accumulate_paths, TEST_REGISTER_TREE,
+#                            condition=rgt.internal_node_filter)[0])
 
-def test_convert_numeric_values():
-    pprint(TEST_REGISTER_TREE)
-    pprint(rgt.transform_tree(rgt.convert_to_numbers, TEST_REGISTER_TREE, 
-                             rgt.numeric_filter))
+# def test_convert_numeric_values():
+#     pprint(TEST_REGISTER_TREE)
+#     pprint(rgt.transform_tree(rgt.convert_to_numbers, TEST_REGISTER_TREE, 
+#                              rgt.numeric_filter))
+
+def test_generate_cpp():
+    pprint(rgc.generate_cpp(TEST_REGISTER_TREE))
+
