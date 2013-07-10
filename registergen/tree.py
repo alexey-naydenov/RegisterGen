@@ -107,19 +107,22 @@ def process_tree(key_functions_dict, tree, accumulator):
     The tree is not getting rewritten.
     """
     for node_name, node_value in tree.items():
-        # pre function
-        if node_name in key_functions_dict \
-                and PRE_FUNCTION_KEY in key_functions_dict[node_name]:
-            accumulator = key_functions_dict[node_name][PRE_FUNCTION_KEY](
-                node_value, accumulator)
-        # apply to children
+        # apply to all children
         if node_name in _CHILDREN_KEY_NAMES:
+            pre_function = accumulate_nothing
+            post_function = accumulate_nothing
+            # get pre function
+            if node_name in key_functions_dict \
+                    and PRE_FUNCTION_KEY in key_functions_dict[node_name]:
+                pre_function = key_functions_dict[node_name][PRE_FUNCTION_KEY]
+            # get post function
+            if node_name in key_functions_dict \
+                    and POST_FUNCTION_KEY in key_functions_dict[node_name]:
+                post_function = key_functions_dict[node_name][POST_FUNCTION_KEY]
+            # process children
             for child in node_value:
+                accumulator = pre_function(child, accumulator)
                 accumulator = process_tree(key_functions_dict, child, 
                                            accumulator)
-        # post function
-        if node_name in key_functions_dict \
-                and POST_FUNCTION_KEY in key_functions_dict[node_name]:
-            accumulator = key_functions_dict[node_name][POST_FUNCTION_KEY](
-                node_value, accumulator)
+                accumulator = post_function(child, accumulator)
     return accumulator

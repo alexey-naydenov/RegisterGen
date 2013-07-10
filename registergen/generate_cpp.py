@@ -22,8 +22,22 @@
 
 import registergen.tree as rgt
 
-CPP_GENERATOR_DICT = {'sections': {'pre': rgt.accumulate_nothing, 
-                                   'post': rgt.accumulate_nothing}, 
+def section_pre(section, state):
+    state['namespace'].append(section['name'])
+    state['header'].append('namespace {ns} {{'.format(ns=section['name']))
+    state['src'].append('namespace {ns} {{'.format(ns=section['name']))
+    state['addr'] = section.get('addr', None)
+    return state
+
+def section_post(section, state):
+    state['namespace'].pop()
+    state['header'].append('}} // namespace {ns}'.format(ns=section['name']))
+    state['src'].append('}} // namespace {ns}'.format(ns=section['name']))
+    state['addr'] = None
+    return state
+
+CPP_GENERATOR_DICT = {'sections': {'pre': section_pre, 
+                                   'post': section_post}, 
                       'registers': {'pre': rgt.accumulate_nothing, 
                                     'post': rgt.accumulate_nothing},
                       'fields': {'pre': rgt.accumulate_nothing, 
@@ -34,5 +48,8 @@ CPP_GENERATOR_DICT = {'sections': {'pre': rgt.accumulate_nothing,
 def generate_cpp(regtree):
     regtree = rgt.transform_tree(rgt.convert_to_numbers, regtree, 
                                  rgt.numeric_filter)
-    cpp_generator_state = {}
+    cpp_generator_state = {'namespace': [],
+                           'addr': None,
+                           'header': [],
+                           'src': []}
     return rgt.process_tree(CPP_GENERATOR_DICT, regtree, cpp_generator_state)

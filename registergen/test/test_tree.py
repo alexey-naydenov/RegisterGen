@@ -24,5 +24,11 @@ def test_transform_tree_identity():
 #                              rgt.numeric_filter))
 
 def test_generate_cpp():
-    pprint(rgc.generate_cpp(TEST_REGISTER_TREE))
+    gen_state = rgc.generate_cpp(TEST_REGISTER_TREE)
+    print()
+    print('\n'.join(gen_state['header']))
+    print()
+    print('\n'.join(gen_state['src']))
+    print()
+    
 
