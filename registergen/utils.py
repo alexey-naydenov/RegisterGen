@@ -20,6 +20,7 @@
 
 """Utilities used in other functions."""
 
+import re
 import json
 
 def read_json(filename):
@@ -34,3 +35,15 @@ def string_to_int(int_string):
     else:
         return int_string
     
+def parse_bits(bits):
+    """Parse bit range string into list of length 2."""
+    bits_match = re.match(r"(\d{1,2})(-(\d{1,2}))?", bits)
+    if bits_match is None:
+        raise Exception('Failed to parse bits in {0}'.format(bits))
+    if bits_match.groups()[2] is None:
+        parsed_bits = [int(bits_match.groups()[0]), 
+                       int(bits_match.groups()[0])]
+    else:
+        parsed_bits = [int(bits_match.groups()[0]), 
+                       int(bits_match.groups()[2])]
+    return sorted(parsed_bits)

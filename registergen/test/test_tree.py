@@ -29,7 +29,5 @@ def test_generate_cpp():
     print()
     print('\n'.join(gen_state['header']))
     print()
-    print('\n'.join(gen_state['src']))
-    print()
     
 

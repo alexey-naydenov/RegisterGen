@@ -21,6 +21,7 @@
 """C++ code generation functions."""
 
 import registergen.tree as rgt
+import registergen.utils as rgu
 
 class DescriptionError(Exception):
     pass
@@ -91,12 +92,50 @@ def register_post(register, state):
     state['header'].extend(header)
     return state
 
+FIELD_READ_HEADER = [
+    '//! Read field {name}, {desc}',
+    'uint32_t {name}() {{',
+    '    return ReadField(address, {bits[0]}, {bits[1]});',
+    '}}',
+]
+FIELD_WRITE_HEADER = [
+    '//! Write field {name}, {desc}',
+    'uint32_t {name}(uint32_t value) {{',
+    '    WriteField(address, {bits[0]}, {bits[1]}, value);',
+    '    return ReadField(address, {bits[0]}, {bits[1]});',
+    '}}',
+]
+
+def field_format_dict(field, state):
+    format_dict = {'name': field['name'], 'desc': field.get('desc', ''),
+                   'writable': field.get('writable', True)}
+    if 'bits' in field:
+        format_dict['bits'] = rgu.parse_bits(field['bits'])
+    else:
+        raise DescriptionError('Description of field {name} does '
+                               'not have bits'.format(**format_dict))
+
+    return format_dict
+
+def field_pre(field, state):
+    format_dict = field_format_dict(field, state)
+    state['header'].extend([hl.format(**format_dict) 
+                            for hl in FIELD_READ_HEADER])
+    if format_dict['writable']:
+        state['header'].extend([hl.format(**format_dict) 
+                                for hl in FIELD_WRITE_HEADER])
+    return state
+
+def field_post(field, state):
+    format_dict = field_format_dict(field, state)
+    return state
+
 CPP_GENERATOR_DICT = {'sections': {'pre': section_pre, 
                                    'post': section_post}, 
                       'registers': {'pre': register_pre, 
                                     'post': register_post},
-                      'fields': {'pre': rgt.accumulate_nothing, 
-                                 'post': rgt.accumulate_nothing},
+                      'fields': {'pre': field_pre, 
+                                 'post': field_post},
                       'values': {'pre': rgt.accumulate_nothing, 
                                  'post': rgt.accumulate_nothing}}
 
