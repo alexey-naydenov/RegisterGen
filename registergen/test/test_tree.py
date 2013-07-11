@@ -2,6 +2,7 @@ from pprint import pprint
 
 import registergen.tree as rgt
 import registergen.generate_cpp as rgc
+import registergen.utils as rgu
 
 TEST_REGISTER_TREE = {'sections': [{'addr': '0x02530000',
                                     'desc': 'I2C configuration registers',
@@ -24,7 +25,7 @@ def test_transform_tree_identity():
 #                              rgt.numeric_filter))
 
 def test_generate_cpp():
-    gen_state = rgc.generate_cpp(TEST_REGISTER_TREE)
+    gen_state = rgc.generate_cpp(rgu.read_json('registergen/test/i2c.json'))
     print()
     print('\n'.join(gen_state['header']))
     print()
