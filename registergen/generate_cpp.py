@@ -26,6 +26,19 @@ import registergen.utils as rgu
 class DescriptionError(Exception):
     pass
 
+CPP_HEADER_PREAMBLE = [
+    '#include <stdint.h>;',
+    '#include <string>;',
+    '#include <sstream>;',
+    '',
+    'namespace {{',
+    '',
+    '',
+    '',
+    '',
+    '',
+]
+
 def section_pre(section, state):
     state['namespace'].append(section['name'])
     state['header'].append('namespace {ns} {{'.format(ns=section['name']))
@@ -138,7 +151,7 @@ FIELD_DESC_BEG = [
     ]
 FIELD_DESC_VAL = [
     '        if (value == k{name})',
-    '            ss << "\t0x" << std::hex << value << " - " << {name} << "\\n"'
+    '            ss << "\\t0x" << std::hex << value << " - {name} \\n"'
     ]
 FIELD_DESC_END = [
     '    }}',
