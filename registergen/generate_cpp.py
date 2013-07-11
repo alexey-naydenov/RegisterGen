@@ -43,6 +43,7 @@ def section_post(section, state):
 REGISTER_PRE_HEADER = [
     '//! Register {name}, {desc}',
     'struct {name} {{',
+    'typedef {name} ObjectType;',
     'static const std::size_t address = 0x{addr:X};',
     '',
     'static inline uint32_t read() {{',
@@ -94,15 +95,15 @@ def register_post(register, state):
 
 FIELD_READ_HEADER = [
     '//! Read field {name}, {desc}',
-    'uint32_t {name}() {{',
+    'inline uint32_t {name}() const {{',
     '    return ReadField(address, {bits[0]}, {bits[1]});',
     '}}',
 ]
 FIELD_WRITE_HEADER = [
     '//! Write field {name}, {desc}',
-    'uint32_t {name}(uint32_t value) {{',
+    'ObjectType &{name}(uint32_t value) {{',
     '    WriteField(address, {bits[0]}, {bits[1]}, value);',
-    '    return ReadField(address, {bits[0]}, {bits[1]});',
+    '    return *this;',
     '}}',
 ]
 
@@ -126,8 +127,46 @@ def field_pre(field, state):
                                 for hl in FIELD_WRITE_HEADER])
     return state
 
+FIELD_DESC_BEG = [
+    '//! Convert field value into a string.',
+    'std::string {name}_desc(bool verbose=false) {{',
+    '    uint32_t value = {name}();',
+    '    std::ostringstream ss;',
+    '    ss << "{name} : 0x" << std::hex << value "(" << std::dec << value << ")\\n";',
+    '    if (verbose) {{',
+    '        ss << "\\t{desc}\\n";',
+    ]
+FIELD_DESC_VAL = [
+    '        if (value == k{name})',
+    '            ss << "\t0x" << std::hex << value << " - " << {name} << "\\n"'
+    ]
+FIELD_DESC_END = [
+    '    }}',
+    '    return ss.str();',
+    '}}'
+    ]
+
+FIELD_VAL_CONST = [
+    'const uint32_t k{name} = 0x{val:X};'
+]
+
 def field_post(field, state):
     format_dict = field_format_dict(field, state)
+    for val_dict in state['values']:
+        state['header'].extend([hl.format(**val_dict) 
+                                for hl in FIELD_VAL_CONST])
+    state['header'].extend([hl.format(**format_dict) 
+                            for hl in FIELD_DESC_BEG])
+    for val_dict in state['values']:
+        state['header'].extend([hl.format(**val_dict) 
+                                for hl in FIELD_DESC_VAL])
+    state['header'].extend([hl.format(**format_dict) 
+                            for hl in FIELD_DESC_END])
+    state['values'] = []
+    return state
+
+def value_pre(value, state):
+    state['values'].append(value)
     return state
 
 CPP_GENERATOR_DICT = {'sections': {'pre': section_pre, 
@@ -136,7 +175,7 @@ CPP_GENERATOR_DICT = {'sections': {'pre': section_pre,
                                     'post': register_post},
                       'fields': {'pre': field_pre, 
                                  'post': field_post},
-                      'values': {'pre': rgt.accumulate_nothing, 
+                      'values': {'pre': value_pre, 
                                  'post': rgt.accumulate_nothing}}
 
 def generate_cpp(regtree):
@@ -145,5 +184,6 @@ def generate_cpp(regtree):
     cpp_generator_state = {'namespace': [],
                            'addr': None,
                            'header': [],
-                           'src': []}
+                           'src': [],
+                           'values': []}
     return rgt.process_tree(CPP_GENERATOR_DICT, regtree, cpp_generator_state)
