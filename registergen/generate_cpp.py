@@ -27,17 +27,27 @@ class DescriptionError(Exception):
     pass
 
 CPP_HEADER_PREAMBLE = [
-    '#include <stdint.h>;',
-    '#include <string>;',
-    '#include <sstream>;',
+    '#include <stdint.h>',
+    '#include <string>',
+    '#include <sstream>',
+    '',
+    '#ifndef {guard}',
+    '#define {guard}',
     '',
     'namespace {{',
-    '',
-    '',
-    '',
-    '',
+    'uint32_t ReadField(uint32_t address, uint32_t first_bit, uint32_t last_bit) {{',
+    '    return (*(reinterpret_cast<volatile uint32_t *>(address)) & ( ((~0u)<<(last_bit+1))^((~0u)<<first_bit) ))>>first_bit;',
+    '}}',
+    'void WriteField(uint32_t address, uint32_t first_bit, uint32_t last_bit, uint32_t value) {{',
+    '    uint32_t mask = ((~0u)<<(last_bit+1))^((~0u)<<first_bit);',
+    '    *(reinterpret_cast<volatile uint32_t *>(address)) =',
+    '        (*(reinterpret_cast<volatile uint32_t *>(address)) & ~mask) | ((value<<first_bit) & mask);',
     '',
 ]
+
+CPP_HEADER_EPILOG = [
+    '#endif // {guard}',
+    ]
 
 def section_pre(section, state):
     state['namespace'].append(section['name'])
@@ -199,4 +209,11 @@ def generate_cpp(regtree):
                            'header': [],
                            'src': [],
                            'values': []}
-    return rgt.process_tree(CPP_GENERATOR_DICT, regtree, cpp_generator_state)
+    header_dict = {'guard': 'GENERATED_HEADER'}
+    cpp_generator_state['header'].extend([hl.format(**header_dict) 
+                                          for hl in CPP_HEADER_PREAMBLE])
+    cpp_generator_state =rgt.process_tree(CPP_GENERATOR_DICT, regtree, 
+                                          cpp_generator_state)
+    cpp_generator_state['header'].extend([hl.format(**header_dict) 
+                                          for hl in CPP_HEADER_EPILOG])
+    return cpp_generator_state
