@@ -21,6 +21,7 @@
 """Command line utility for generating register access code."""
 
 import sys
+import os.path
 import argparse
 
 import registergen.generate_cpp as rgc
@@ -38,7 +39,7 @@ def generate_cpp_code():
         parsed_json = rgu.read_json(args.input)
     except FileNotFoundError as e:
         sys.exit('can not read file: ' + e.filename)
-    parsed_json['guard'] = args.output.replace('.', '_')
+    parsed_json['guard'] = os.path.basename(args.output.replace('.', '_'))
     cpp_state = rgc.generate_cpp(parsed_json)
     # write cpp header into a file
     with open(args.output, 'w') as output_file:
