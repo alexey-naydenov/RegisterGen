@@ -37,13 +37,13 @@ CPP_HEADER_PREAMBLE = [
     'namespace {{',
     'uint32_t ReadField(uint32_t address, uint32_t first_bit, uint32_t last_bit) {{',
     '    return (*(reinterpret_cast<volatile uint32_t *>(address)) & ( ((~0u)<<(last_bit+1))^((~0u)<<first_bit) ))>>first_bit;',
-    '',
+    '}}',
     'void WriteField(uint32_t address, uint32_t first_bit, uint32_t last_bit, uint32_t value) {{',
     '    uint32_t mask = ((~0u)<<(last_bit+1))^((~0u)<<first_bit);',
     '    *(reinterpret_cast<volatile uint32_t *>(address)) =',
     '        (*(reinterpret_cast<volatile uint32_t *>(address)) & ~mask) | ((value<<first_bit) & mask);',
     '}}',
-    ''
+    '}}'
 ]
 
 CPP_HEADER_EPILOG = [
@@ -109,19 +109,22 @@ def register_pre(register, state):
     format_dict = register_format_dict(register, state)
     header = [hl.format(**format_dict) for hl in REGISTER_PRE_HEADER]
     state['header'].extend(header)
+    state['regname'] = format_dict['name']
     return state
 
 REGISTER_DESC_BEG = [
     '//! Convert register value into a string.',
-    'std::string {name}_desc(bool verbose=false) {{',
+    'std::string desc(bool verbose=false, bool with_fields=true) {{',
     '    uint32_t value = {name}();',
     '    std::ostringstream ss;',
-    '    ss << "{name}: 0x" << std::hex << value "(" << std::dec << value << ")\\n";',
+    '    ss << "{name}: 0x" << std::hex << value << " (" << std::dec << value << ")\\n";',
     '    if (verbose) {{',
     '        ss << "\\t{desc}\\n";',
+    '    }}'
+    '    if (with_fields) {{'
     ]
 REGISTER_DESC_VAL = [
-    '        {field_name}_desc(verbose);'
+    '        ss << {field_name}_desc(verbose, false);'
     ]
 REGISTER_DESC_END = [
     '    }}',
@@ -141,6 +144,7 @@ def register_post(register, state):
     state['fields'] = []
     header = [hl.format(**format_dict) for hl in REGISTER_POST_HEADER]
     state['header'].extend(header)
+    state['regname'] = ''
     return state
 
 FIELD_READ_HEADER = [
@@ -159,7 +163,8 @@ FIELD_WRITE_HEADER = [
 
 def field_format_dict(field, state):
     format_dict = {'name': field['name'], 'desc': field.get('desc', ''),
-                   'writable': field.get('writable', True)}
+                   'writable': field.get('writable', True), 
+                   'regname':state['regname']}
     if 'bits' in field:
         format_dict['bits'] = rgu.parse_bits(field['bits'])
     else:
@@ -179,18 +184,24 @@ def field_pre(field, state):
 
 FIELD_DESC_BEG = [
     '//! Convert field value into a string.',
-    'std::string {name}_desc(bool verbose=false) {{',
+    'std::string {name}_desc(bool verbose=false, bool is_separate=true) {{',
     '    uint32_t value = {name}();',
     '    std::ostringstream ss;',
-    '    ss << "{name} [{bits[1]}:{bits[0]}]: 0x" << std::hex << value "(" << std::dec << value << ")\\n";',
-    '    if (verbose) {{',
-    '        ss << "\\t{desc}\\n";',
+    '    if (is_separate) {{',
+    '        ss << "{name}({regname}[{bits[1]}:{bits[0]}]): 0x" << std::hex << value << " (" << std::dec << value << ") ";',
+    '    }} else {{',
+    '        ss << "\\t{name} [{bits[1]}:{bits[0]}]: 0x" << std::hex << value << " (" << std::dec << value << ") ";',
+    '    }}'
     ]
 FIELD_DESC_VAL = [
-    '        if (value == k{name})',
-    '            ss << "\\t0x" << std::hex << value << " - {name} \\n"'
+    '    if (value == k{name})',
+    '        ss << " - {name}";'
     ]
 FIELD_DESC_END = [
+    '    if (verbose) {{',
+    '        ss << "\\n\\t\\t{desc}\\n";',
+    '    }} else {{',
+    '        ss << "\\n";',
     '    }}',
     '    return ss.str();',
     '}}'
@@ -236,6 +247,7 @@ def generate_cpp(regtree):
                            'addr': None,
                            'header': [],
                            'src': [],
+                           'regname': '',
                            'fields': [],
                            'values': []}
     header_dict = {'guard': regtree.get('guard', 'GENERATED_HEADER').upper()}
