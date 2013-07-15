@@ -27,12 +27,12 @@ class DescriptionError(Exception):
     pass
 
 CPP_HEADER_PREAMBLE = [
+    '#ifndef {guard}',
+    '#define {guard}',
+    '',
     '#include <stdint.h>',
     '#include <string>',
     '#include <sstream>',
-    '',
-    '#ifndef {guard}',
-    '#define {guard}',
     '',
     'namespace {{',
     'uint32_t ReadField(uint32_t address, uint32_t first_bit, uint32_t last_bit) {{',
@@ -209,7 +209,7 @@ def generate_cpp(regtree):
                            'header': [],
                            'src': [],
                            'values': []}
-    header_dict = {'guard': 'GENERATED_HEADER'}
+    header_dict = {'guard': regtree.get('guard', 'GENERATED_HEADER').upper()}
     cpp_generator_state['header'].extend([hl.format(**header_dict) 
                                           for hl in CPP_HEADER_PREAMBLE])
     cpp_generator_state =rgt.process_tree(CPP_GENERATOR_DICT, regtree, 
