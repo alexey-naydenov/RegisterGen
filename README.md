@@ -1,32 +1,45 @@
 # RegisterGen #
 
-Code generator for hardware registers access.
+RegisterGen is a generator for C++ code that simplifies access to
+hardware registers. It is intended to be mainly used during debugging.
 
-The basic idea is to take a JSON description of hardware registers and
-generate C++ code for read/write/print.
+Bit fields and structures are usually used in order to get access to
+block of registers and fields. But often some registers or fields are
+missing from a manufactures library. If one decides to write access
+structures by hand then he must define in 3 separate places: field
+structure; addresses and offsets; constants for field values;
+(optionally) textual register description and print functions. That is
+such utility code is spread out and contains a lot of boiler plate.
+This program reads register description in JSON format and generates
+C++ code that solves all these problems.
 
-Features:
-- read/write register values and fields,
-- only writable fields can be changed,
-- print register values and optionally all fields,
-- values of fields can be set and printed using names,
-- registers are singletons
-- the register object should not have a state
+## Example ##
 
-## JSON schema ##
+Sample configuration:
 
-Children synonyms: `sections`, `registers`, `fields`, `values`.
+```json
+{[
+  {
+    "section": "Register section",
+    "address": "0x100000",
+	"registers": [
+	  { "name": "DEVSTAT",
+	    "offset": "0x100",
+		"address": "0x80012300",
+		"fields": [
+		  { "name": "BOOTMODE", "first": 1, "last": 13,
+		    "values": [
+			  { "name": "I2C", "value": 1 }
+			]
+		  }
+	    ]
+	  }
+	]
+  }
+]}
+```
 
-- The top level can contain one or more occurrences of arrays:
-  `sections`, `registers`.
-- `sections` can contain `sections` and/or `registers`.
-- `registers` can contain `fields`.
-- `fields` can contain `values`.
-- `values` can contain `values` (used to define conditional values).
-
-## Example usage ##
-
-Generated code can be used in the following way:
+Generated code use:
 
 ```c++
 #include <c66x_registers.h>
@@ -47,7 +60,7 @@ int main() {
 }
 ```
 
-Sample of generated code:
+Generated code:
 
 ```c++
 struct DEVSTAT {
@@ -80,26 +93,3 @@ struct DEVSTAT {
 };
 ```
 
-Sample configuration:
-
-```json
-{[
-  {
-    "section": "Register section",
-    "address": "0x100000",
-	"registers": [
-	  { "name": "DEVSTAT",
-	    "offset": "0x100",
-		"address": "0x80012300",
-		"fields": [
-		  { "name": "BOOTMODE", "first": 1, "last": 13,
-		    "values": [
-			  { "name": "I2C", "value": 1 }
-			]
-		  }
-	    ]
-	  }
-	]
-  }
-]}
-```
